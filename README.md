@@ -7,7 +7,7 @@
 
 ## 📖 Overview
 
-https://github.com/user-attachments/assets/5698cdea-847f-4732-9910-c78f07aa0404
+[![Watch the video](assets/demo_video_first_frame.png)](https://www.youtube.com/watch?v=BvMZ_oJm-5o)
 
 We introduce **AnyFlow**, the first any-step video diffusion framework built on flow maps. **AnyFlow** offers these key features:
 
