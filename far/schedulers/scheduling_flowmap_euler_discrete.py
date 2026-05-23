@@ -18,6 +18,7 @@ from typing import Optional, Union
 
 import torch
 from diffusers.configuration_utils import ConfigMixin, register_to_config
+from diffusers.schedulers.scheduling_flow_map_euler_discrete import FlowMapEulerDiscreteSchedulerOutput
 from diffusers.schedulers.scheduling_utils import SchedulerMixin
 from diffusers.utils import logging
 
@@ -86,7 +87,7 @@ class FlowMapDiscreteScheduler(SchedulerMixin, ConfigMixin):
         num_inference_steps: Optional[int] = None,
         device: Union[str, torch.device] = None,
     ):
-        timesteps = torch.linspace(1.0, 0.0, num_inference_steps + 1, dtype=torch.float64, device=device)
+        timesteps = torch.linspace(1.0, 0.0, num_inference_steps + 1, dtype=torch.float64, device=device)[:-1]
         timesteps = self.apply_shift(timesteps)
 
         self.timesteps = timesteps * self.config.num_train_timesteps
@@ -94,13 +95,18 @@ class FlowMapDiscreteScheduler(SchedulerMixin, ConfigMixin):
     def step(
         self,
         model_output: torch.FloatTensor,
-        sample: torch.FloatTensor,
         timestep: Optional[Union[float, torch.FloatTensor]] = None,
+        sample: Optional[Union[float, torch.FloatTensor]] = None,
         r_timestep: Optional[Union[float, torch.FloatTensor]] = None,
+        return_dict: bool = True
     ):
         timestep = timestep / self.config.num_train_timesteps
         r_timestep = r_timestep / self.config.num_train_timesteps
         timestep = timestep.view(*timestep.shape, *([1] * (model_output.ndim - timestep.ndim)))
         r_timestep = r_timestep.view(*r_timestep.shape, *([1] * (model_output.ndim - r_timestep.ndim)))
         prev_sample = sample - (timestep - r_timestep) * model_output
-        return prev_sample.to(model_output.dtype)
+
+        if not return_dict:
+            return (prev_sample.to(model_output.dtype),)
+
+        return FlowMapEulerDiscreteSchedulerOutput(prev_sample=prev_sample.to(model_output.dtype))

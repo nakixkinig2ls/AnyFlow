@@ -422,7 +422,7 @@ class WanAnyFlowPipeline(DiffusionPipeline, WanLoraLoaderMixin):
                     noise_uncond, noise_pred = noise_pred.chunk(2)
                     noise_pred = noise_uncond + guidance_scale * (noise_pred - noise_uncond)
 
-                latents = self.scheduler.step(noise_pred, latents, t, r)
+                latents = self.scheduler.step(noise_pred, t, latents, r).prev_sample
 
             return latents
 
@@ -431,6 +431,7 @@ class WanAnyFlowPipeline(DiffusionPipeline, WanLoraLoaderMixin):
         # 4. Prepare timesteps
         self.scheduler.set_timesteps(num_inference_steps, device=device)
         timesteps = self.scheduler.timesteps
+        timesteps = torch.cat([timesteps, timesteps.new_tensor([0])])
 
         if grad_timestep is None:
             latents = inference_range(latents, timesteps)

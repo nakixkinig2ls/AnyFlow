@@ -63,16 +63,16 @@ def build_causal_pipeline(model_type, model_path):
     else:
         raise NotImplementedError
 
-    transformer = FAR_Wan_Transformer3DModel.from_pretrained(
-        base_model_name,
-        chunk_partition=far_config['chunk_partition'],
-        full_chunk_limit=far_config['full_chunk_limit'],
+    transformer = FAR_Wan_Transformer3DModel.from_pretrained(base_model_name, subfolder='transformer')
+    transformer.register_to_config(
         compressed_patch_size=far_config['compressed_patch_size'],
-        subfolder='transformer'
+        full_chunk_limit=far_config['full_chunk_limit'],
+        chunk_partition=far_config['chunk_partition']
     )
     transformer.setup_far_model()
-    transformer.setup_flowmap_model(gate_value=0.25, deltatime_type="r")
-    transformer.register_to_config(init_far_model=True, init_flowmap_model=True, deltatime_type='r', gate_value=0.25)
+
+    transformer.register_to_config(deltatime_type='r', gate_value=0.25)
+    transformer.setup_flowmap_model()
 
     # load model
     state_dict = torch.load(model_path)['ema']
@@ -97,8 +97,8 @@ def build_bidirectional_pipeline(model_type='AnyFlow-Wan2.1-T2V-1.3B-Diffusers',
         raise NotImplementedError
 
     transformer = FAR_Wan_Transformer3DModel.from_pretrained(base_model_name, subfolder='transformer')
-    transformer.setup_flowmap_model(gate_value=0.25, deltatime_type='r')
-    transformer.register_to_config(init_flowmap_model=True, deltatime_type='r', gate_value=0.25)
+    transformer.register_to_config(deltatime_type='r', gate_value=0.25)
+    transformer.setup_flowmap_model()
 
     # load model
     state_dict = torch.load(model_path)['ema']
@@ -141,7 +141,7 @@ CLI variables:
 
 Example:
 python -m scripts.convert_model.convert_anyflow_to_diffusers \
-    model_type=AnyFlow-Wan2.1-T2V-14B-Diffusers \
-    model_path=experiments/pretrained_models/AnyFlow_Demo/anyflow_v1.0/anyflow-wan-14b.pt \
+    model_type=AnyFlow-Wan2.1-T2V-1.3B-Diffusers \
+    model_path=experiments/pretrained_models/AnyFlow_Demo/anyflow_v1.0/anyflow-wan-1.3b.pt \
     model_save_dir=experiments/pretrained_models/AnyFlow-Diffusers-V1.0/
 """

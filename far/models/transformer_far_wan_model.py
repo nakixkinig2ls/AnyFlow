@@ -19,7 +19,7 @@
 import copy
 import math
 from types import SimpleNamespace
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -632,8 +632,9 @@ class FAR_Wan_Transformer3DModel(ModelMixin, ConfigMixin, PeftAdapterMixin, From
     def __init__(
         self,
         patch_size: Tuple[int] = (1, 2, 2),
-        compressed_patch_size: Tuple[int] = (1, 4, 4),
-        full_chunk_limit: int = 3,
+        compressed_patch_size: Optional[Tuple[int]] = None,
+        full_chunk_limit: Optional[int] = None,
+        chunk_partition: Optional[List[int]] = None,
         num_attention_heads: int = 40,
         attention_head_dim: int = 128,
         in_channels: int = 16,
@@ -648,11 +649,8 @@ class FAR_Wan_Transformer3DModel(ModelMixin, ConfigMixin, PeftAdapterMixin, From
         image_dim: Optional[int] = None,
         added_kv_proj_dim: Optional[int] = None,
         rope_max_seq_len: int = 1024,
-        chunk_partition=None,
-        init_far_model=False,
-        init_flowmap_model=False,
-        gate_value=0,
-        deltatime_type='r'
+        gate_value: Optional[float] = None,
+        deltatime_type: Optional[str] = None
     ) -> None:
         super().__init__()
 
@@ -690,18 +688,18 @@ class FAR_Wan_Transformer3DModel(ModelMixin, ConfigMixin, PeftAdapterMixin, From
 
         self.gradient_checkpointing = False
 
-        if init_far_model:
+        if self.config.compressed_patch_size is not None:
             self.setup_far_model()
-        if init_flowmap_model:
-            self.setup_flowmap_model(gate_value=self.config.gate_value, deltatime_type=self.config.deltatime_type)
+        if self.config.deltatime_type is not None:
+            self.setup_flowmap_model()
 
-    def setup_flowmap_model(self, gate_value=0, deltatime_type='r'):
+    def setup_flowmap_model(self):
         inner_dim = self.config.num_attention_heads * self.config.attention_head_dim
 
         condition_embedder = WanTwoTimeTextImageEmbedding(
             dim=inner_dim,
-            gate_value=gate_value,
-            deltatime_type=deltatime_type,
+            gate_value=self.config.gate_value,
+            deltatime_type=self.config.deltatime_type,
             time_freq_dim=self.config.freq_dim,
             time_proj_dim=inner_dim * 6,
             text_embed_dim=self.config.text_dim,
@@ -733,6 +731,9 @@ class FAR_Wan_Transformer3DModel(ModelMixin, ConfigMixin, PeftAdapterMixin, From
         with torch.no_grad():
             self.far_patch_embedding.weight.copy_(new_weight)
             self.far_patch_embedding.bias.copy_(self.patch_embedding.bias)
+
+        # reset rope part with compressed patch size
+        self.rope = WanRotaryPosEmbed(self.config.attention_head_dim, self.config.patch_size, self.config.compressed_patch_size, self.config.rope_max_seq_len)
 
     def _unpack_latent_sequence(self, latents, num_frames, height, width, patch_size):
         batch_size, num_patches, channels = latents.shape

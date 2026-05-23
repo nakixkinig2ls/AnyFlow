@@ -64,15 +64,11 @@ class Wan_AnyFlow_Pretrain_Trainer(nn.Module, ConfigMixin):
         super(Wan_AnyFlow_Pretrain_Trainer, self).__init__()
 
         if transformer_cfg is not None:
-            self.transformer = build_model(transformer_cfg['model_type']).from_pretrained(
-                transformer_cfg['model_name'], subfolder='transformer'
-            )
+            self.transformer = build_model(transformer_cfg['model_type']).from_pretrained(transformer_cfg['model_name'], subfolder='transformer')
 
-            if not self.transformer.config.get('init_flowmap_model'):
-                self.transformer.setup_flowmap_model(
-                    gate_value=flowmap_cfg.get('gate_value', 0.0),
-                    deltatime_type=flowmap_cfg.get('deltatime_type', 'r')
-                )
+            if self.transformer.config.deltatime_type is None:
+                self.transformer.register_to_config(gate_value=flowmap_cfg['gate_value'], deltatime_type=flowmap_cfg['deltatime_type'])
+                self.transformer.setup_flowmap_model()
 
             if 'lora_config' in transformer_cfg:
                 lora_config = LoraConfig(
