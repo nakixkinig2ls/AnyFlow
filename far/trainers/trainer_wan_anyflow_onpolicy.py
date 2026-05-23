@@ -117,15 +117,15 @@ class Wan_AnyFlow_OnPolicy_Trainer(Wan_AnyFlow_Pretrain_Trainer):
 
         # Step 1: Compute the fake score
         noise_pred_fake_cond = self.discriminator(noisy_latent, timestep=timesteps, r_timestep=timesteps, encoder_hidden_states=prompt_embeds, is_causal=False)[0]  # noqa: E501
-        pred_fake_video = self.dmd_scheduler.step(noise_pred_fake_cond, noisy_latent, timesteps, torch.zeros_like(timesteps))
+        pred_fake_video = self.dmd_scheduler.step(noise_pred_fake_cond, timesteps, noisy_latent, torch.zeros_like(timesteps))
 
         # Step 2: Compute the real score
         noise_pred_real_cond = self.real_score(noisy_latent, timestep=timesteps, r_timestep=timesteps, encoder_hidden_states=prompt_embeds, is_causal=False)[0]  # noqa: E501
-        pred_real_video_cond = self.dmd_scheduler.step(noise_pred_real_cond, noisy_latent, timesteps, torch.zeros_like(timesteps))
+        pred_real_video_cond = self.dmd_scheduler.step(noise_pred_real_cond, timesteps, noisy_latent, torch.zeros_like(timesteps))
 
         if self.config['dmd_cfg'].get('real_guidance_scale'):
             noise_pred_real_uncond = self.real_score(noisy_latent, timestep=timesteps, r_timestep=timesteps, encoder_hidden_states=self.negative_embedding, is_causal=False)[0]  # noqa: E501
-            pred_real_video_uncond = self.dmd_scheduler.step(noise_pred_real_uncond, noisy_latent, timesteps, torch.zeros_like(timesteps))
+            pred_real_video_uncond = self.dmd_scheduler.step(noise_pred_real_uncond, timesteps, noisy_latent, torch.zeros_like(timesteps))
 
             pred_real_video = pred_real_video_cond + (
                 pred_real_video_cond - pred_real_video_uncond

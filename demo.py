@@ -24,6 +24,7 @@ from omegaconf import MISSING, OmegaConf
 from PIL import Image
 from torchvision import transforms
 
+from far.models.transformer_far_wan_model import FAR_Wan_Transformer3DModel
 from far.pipelines.pipeline_far_wan_anyflow import FARWanAnyFlowPipeline
 from far.pipelines.pipeline_wan_anyflow import WanAnyFlowPipeline
 from far.utils.video_util import select_frame_indices
@@ -45,7 +46,9 @@ class DemoConfig:
 
 
 def inference_causal_demo(model_path, task_type, save_dir):
-    pipeline = FARWanAnyFlowPipeline.from_pretrained(model_path).to('cuda', dtype=torch.bfloat16)
+    transformer = FAR_Wan_Transformer3DModel.from_pretrained(model_path, subfolder='transformer')
+    pipeline = FARWanAnyFlowPipeline.from_pretrained(model_path, transformer=transformer).to('cuda', dtype=torch.bfloat16)
+
     os.makedirs(save_dir, exist_ok=True)
 
     if task_type == 't2v':
@@ -108,7 +111,8 @@ def inference_causal_demo(model_path, task_type, save_dir):
 
 
 def inference_bidirectional_demo(model_path, task_type, save_dir):
-    pipeline = WanAnyFlowPipeline.from_pretrained(model_path).to('cuda', dtype=torch.bfloat16)
+    transformer = FAR_Wan_Transformer3DModel.from_pretrained(model_path, subfolder='transformer')
+    pipeline = WanAnyFlowPipeline.from_pretrained(model_path, transformer=transformer).to('cuda', dtype=torch.bfloat16)
     os.makedirs(save_dir, exist_ok=True)
 
     if task_type == 't2v':
@@ -149,7 +153,7 @@ CLI variables:
 
 Example (from repository root):
 python demo.py \
-    model_path=experiments/pretrained_models/AnyFlow-Wan2.1-T2V-1.3B-Diffusers \
+    model_path=experiments/pretrained_models/AnyFlow-FAR-Wan2.1-1.3B-Diffusers \
     task_type=t2v \
-    save_dir=results/demo_v0.9/AnyFlow-Wan2.1-T2V-1.3B-Diffusers
+    save_dir=results/demo_v1.0/AnyFlow-FAR-Wan2.1-1.3B-Diffusers
 """

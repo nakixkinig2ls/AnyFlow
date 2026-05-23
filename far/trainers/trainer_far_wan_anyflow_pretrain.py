@@ -65,21 +65,19 @@ class FAR_Wan_AnyFlow_Pretrain_Trainer(nn.Module, ConfigMixin):
         super(FAR_Wan_AnyFlow_Pretrain_Trainer, self).__init__()
 
         if transformer_cfg is not None:
-            self.transformer = build_model(transformer_cfg['model_type']).from_pretrained(
-                transformer_cfg['model_name'],
-                chunk_partition=transformer_cfg['far_config']['chunk_partition'],
-                full_chunk_limit=transformer_cfg['far_config']['full_chunk_limit'],
-                compressed_patch_size=transformer_cfg['far_config']['compressed_patch_size'],
-                subfolder='transformer'
-            )
+            self.transformer = build_model(transformer_cfg['model_type']).from_pretrained(transformer_cfg['model_name'], subfolder='transformer')
 
-            if not self.transformer.config.get('init_far_model'):
-                self.transformer.setup_far_model()
-            if not self.transformer.config.get('init_flowmap_model'):
-                self.transformer.setup_flowmap_model(
-                    gate_value=flowmap_cfg.get('gate_value', 0.0),
-                    deltatime_type=flowmap_cfg.get('deltatime_type', 'r')
+            if self.transformer.config.compressed_patch_size is None:
+                self.transformer.register_to_config(
+                    compressed_patch_size=transformer_cfg['far_config']['compressed_patch_size'],
+                    full_chunk_limit=transformer_cfg['far_config']['full_chunk_limit'],
+                    chunk_partition=transformer_cfg['far_config']['chunk_partition']
                 )
+                self.transformer.setup_far_model()
+
+            if self.transformer.config.deltatime_type is None:
+                self.transformer.register_to_config(gate_value=flowmap_cfg['gate_value'], deltatime_type=flowmap_cfg['deltatime_type'])
+                self.transformer.setup_flowmap_model()
 
             if 'lora_config' in transformer_cfg:
                 lora_config = LoraConfig(

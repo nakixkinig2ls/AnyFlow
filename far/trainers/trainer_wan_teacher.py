@@ -60,9 +60,7 @@ class WanTeacherTrainer(nn.Module, ConfigMixin):
         super(WanTeacherTrainer, self).__init__()
 
         if transformer_cfg is not None:
-            self.transformer = build_model(transformer_cfg['model_type']).from_pretrained(
-                transformer_cfg['model_name'], subfolder='transformer'
-            )
+            self.transformer = build_model(transformer_cfg['model_type']).from_pretrained(transformer_cfg['model_name'], subfolder='transformer')
 
             if 'lora_config' in transformer_cfg:
                 lora_config = LoraConfig(
