@@ -7,7 +7,7 @@ mixed_precision: true
 datasets:
   train:
     type: T2VTarDataset
-    meta_path: assets/data/meta/vidprom_text2video_dummy_dataset/raw.json
+    meta_path: assets/data/meta/vidprom_dummy/raw.json
     num_frames: 81
     data_dtype: .mp4
     dataloader_cfg:
